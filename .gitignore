@@ -79,3 +79,5 @@ DerivedDataCache/*
 
 # Ignore Third Party Assets
 Content/ThirdParty/*
+
+Content/ParagonCrunch/*
