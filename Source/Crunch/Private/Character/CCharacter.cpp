@@ -3,8 +3,11 @@
 
 #include "Character/CCharacter.h"
 
+#include "Components/WidgetComponent.h"
 #include "GAS/CAbilitySystemComponent.h"
 #include "GAS/CAttributeSet.h"
+#include "Kismet/GameplayStatics.h"
+#include "Widgets/OverHeadStatsGauge.h"
 
 // Sets default values
 ACCharacter::ACCharacter()
@@ -13,8 +16,10 @@ ACCharacter::ACCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	CAbilitySystemComponent = CreateDefaultSubobject<UCAbilitySystemComponent>("CAbility System Component");
-	CAttributeSet = CreateDefaultSubobject<UCAttributeSet>("CAttribute Set");
+	CAbilitySystemComponent = CreateDefaultSubobject<UCAbilitySystemComponent>("CAbilitySystemComponent");
+	CAttributeSet = CreateDefaultSubobject<UCAttributeSet>("CAttributeSet");
+	OverHeadWidgetComponent = CreateDefaultSubobject<UWidgetComponent>("OverHeadStatsGauge");
+	OverHeadWidgetComponent->SetupAttachment(GetRootComponent());
 }
 
 void ACCharacter::ServerInit()
@@ -28,14 +33,27 @@ void ACCharacter::ClientInit()
 	CAbilitySystemComponent->InitAbilityActorInfo(this, this);
 }
 
-// Called when the game starts or when spawned
+bool ACCharacter::IsLocallyControlledByPlayer() const
+{
+	return GetController() && GetController()->IsLocalPlayerController();
+}
+
+void ACCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	if (NewController && !NewController->IsPlayerController())
+	{
+		ServerInit();
+	}
+}
+
 void ACCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	ConfigureOverHeadStatusWidget();
 }
 
-// Called every frame
 void ACCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -52,5 +70,38 @@ void ACCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 UAbilitySystemComponent* ACCharacter::GetAbilitySystemComponent() const
 {
 	return CAbilitySystemComponent;
+}
+
+void ACCharacter::ConfigureOverHeadStatusWidget()
+{
+	if (!OverHeadWidgetComponent)
+	{
+		return;
+	}
+	
+	if (IsLocallyControlledByPlayer())
+	{
+		OverHeadWidgetComponent->SetHiddenInGame(true);
+		return;
+	}
+	
+	if (UOverHeadStatsGauge* OverHeadStatsGauge = Cast<UOverHeadStatsGauge>(OverHeadWidgetComponent->GetUserWidgetObject()))
+	{
+		OverHeadStatsGauge->ConfigureWithASC(CAbilitySystemComponent);
+		OverHeadWidgetComponent->SetHiddenInGame(false);
+		
+		GetWorldTimerManager().ClearTimer(HeadStatGaugeVisibilityUpdateTimerHandle);
+		GetWorldTimerManager().SetTimer(HeadStatGaugeVisibilityUpdateTimerHandle, this, &ThisClass::UpdateHeadGaugeVisibility, HeadStatGaugeVisibilityCheckInterval, true);
+	}
+}
+
+void ACCharacter::UpdateHeadGaugeVisibility()
+{
+	APawn* LocalPlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (LocalPlayerPawn)
+	{
+		float DistSquared = FVector::DistSquared(GetActorLocation(), LocalPlayerPawn->GetActorLocation());
+		OverHeadWidgetComponent->SetHiddenInGame(DistSquared > HeadStatGaugeVisibilityRangeSquared);
+	}
 }
 

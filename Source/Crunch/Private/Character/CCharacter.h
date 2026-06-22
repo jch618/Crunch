@@ -8,6 +8,7 @@
 #include "AbilitySystemInterface.h"
 #include "CCharacter.generated.h"
 
+class UWidgetComponent;
 class UCAttributeSet;
 class UCAbilitySystemComponent;
 
@@ -21,6 +22,12 @@ public:
 	ACCharacter();
 	void ServerInit();
 	void ClientInit();
+	bool IsLocallyControlledByPlayer() const;
+	
+	//~ Begin ACharacter Interfaces
+	// only called on the server
+	virtual void PossessedBy(AController* NewController) override;
+	//~ End ACharacter Interfaces
 	
 protected:
 	// Called when the game starts or when spawned
@@ -34,7 +41,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// ------------------------------------------------------------------------
-	// Ability System
+	//								Ability System
 	// ------------------------------------------------------------------------
 public:
 	//~ Begin IAbilitySystemInterface Interfaces
@@ -47,4 +54,22 @@ private:
 	UPROPERTY()
 	TObjectPtr<UCAttributeSet> CAttributeSet;
 	
+	// ------------------------------------------------------------------------
+	//									UI
+	// ------------------------------------------------------------------------
+	
+	UPROPERTY(VisibleDefaultsOnly, Category = "UI")
+	TObjectPtr<UWidgetComponent> OverHeadWidgetComponent;
+	
+	void ConfigureOverHeadStatusWidget();
+	
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	float HeadStatGaugeVisibilityCheckInterval = 0.2f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	float HeadStatGaugeVisibilityRangeSquared = 1000000.f;
+	
+	FTimerHandle HeadStatGaugeVisibilityUpdateTimerHandle;
+	
+	void UpdateHeadGaugeVisibility();
 };
