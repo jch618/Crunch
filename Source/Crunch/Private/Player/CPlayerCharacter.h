@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Character/CCharacter.h"
+
+#include "AbilitySystemInterface.h"
 #include "CPlayerCharacter.generated.h"
 
 struct FInputActionValue;
