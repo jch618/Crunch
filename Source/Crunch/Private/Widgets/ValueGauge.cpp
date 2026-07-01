@@ -41,7 +41,7 @@ void UValueGauge::SetValue(float NewValue, float NewMaxValue)
 	CachedValue = NewValue;
 	CachedMaxValue = NewMaxValue;
 	
-	if (NewValue == 0)
+	if (NewMaxValue == 0)
 	{
 		C_LOG("Value Gauge: %s, NewMaxValue can't be 0", *GetName());
 		return;

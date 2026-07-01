@@ -24,14 +24,24 @@ protected:
 	//~ End UGameplayAbility Interfaces Begin
 	
 private:
-	int32 ComboCount = 1;
+	int32 CurrentComboCount = 1;
 	
-	void SetupWaitComboInputPress();
-	void OnMontageCompleted();
+	UPROPERTY(EditAnywhere, Category = "Crunch|Targeting")
+	float TargetSweepSphereRadius = 30.f;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Crunch|Montage")
 	TObjectPtr<UAnimMontage> ComboMontage;
 	
+	UPROPERTY(EditDefaultsOnly, Category = "Crunch|Gameplay Effects")
+	TSubclassOf<UGameplayEffect> DefaultDamageEffect;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Crunch|Gameplay Effects")
+	TMap<int32, TSubclassOf<UGameplayEffect>> DamageEffectMap;
+	
+	TSubclassOf<UGameplayEffect> GetDamageEffectForCurrentCombo() const;
+	
+	void SetupWaitComboInputPress();
+	void OnMontageCompleted();
 	void TryCommitCombo();
 	
 	UFUNCTION()
@@ -39,4 +49,7 @@ private:
 	
 	UFUNCTION()
 	void OnComboChangedEventReceived(FGameplayEventData Data);
+	
+	UFUNCTION()
+	void ApplyDamage(FGameplayEventData Data);
 };
